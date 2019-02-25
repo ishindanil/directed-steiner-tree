@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "downlevelIteration": true,
+        "target": "es5",
+        "lib": ["dom", "es2018"],
+        "baseUrl": "."
+    },
+    "include": ["**/*.ts"],
+    "exclude": ["node_modules"]
+}
