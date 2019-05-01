@@ -1,5 +1,5 @@
 import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
-import { ShortestPaths } from "algorithms/steiner-tree/shortest-paths";
+import { ShortestPaths } from 'algorithms/steiner-tree/shortest-paths';
 
 import { restoreOriginalPaths } from 'helpers/graph';
 

@@ -23,7 +23,7 @@ export class GreedyFlac {
 
             tree.edges.forEach(edge => {
                 if (!edge.marked) {
-                    steinerTree.addEdge({ ...edge});
+                    steinerTree.addEdge({ ...edge });
                 }
 
                 edge.cost = 0;

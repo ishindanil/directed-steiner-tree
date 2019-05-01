@@ -2,9 +2,11 @@
     "compilerOptions": {
         "experimentalDecorators": true,
         "downlevelIteration": true,
-        "target": "es5",
+        "module": "commonjs",
+        "target": "es2018",
         "lib": ["dom", "es2018"],
-        "baseUrl": "."
+        "baseUrl": ".",
+        "outDir": "build"
     },
     "include": ["**/*.ts"],
     "exclude": ["node_modules"]
