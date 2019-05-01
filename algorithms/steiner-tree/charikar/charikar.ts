@@ -1,85 +1,102 @@
 import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
+import { ShortestPaths } from "algorithms/steiner-tree/shortest-paths";
 
-import { Vertex } from 'types/vertex';
+import { restoreOriginalPaths } from 'helpers/graph';
 
 import Graph from 'models/graph/graph';
-import { IPathMatrix } from 'types/paths';
+
+import { Vertex } from 'types/vertex';
+import { IPathWithAssociatedEdgeMatrix, IPathWithAssociatedEdge } from 'types/paths';
 
 export class Charikar {
-    readonly graph: Graph;
-    readonly root: Vertex;
-    readonly terminals: Vertex[];
-    readonly shortestPathMatrix: IPathMatrix;
+    private readonly graph: Graph;
+    private readonly root: Vertex;
+    private readonly terminals: Vertex[];
+    private shortestPathMatrix: IPathWithAssociatedEdgeMatrix;
 
     constructor(graph: Graph, root: Vertex, terminals: Vertex[]) {
         this.graph = graph;
         this.root = root;
         this.terminals = terminals;
-        this.shortestPathMatrix = new FloydWarshall(graph).calculate();
+
+        this.initShortestPathMatrix();
+    }
+
+    private initShortestPathMatrix() {
+        const shortestPathMatrix = new FloydWarshall(this.graph).calculate();
+
+        this.graph.vertices.forEach(firstVertex => {
+            this.graph.vertices.forEach(secondVertex => {
+                const path = shortestPathMatrix[firstVertex][secondVertex] as IPathWithAssociatedEdge;
+                path.edge = { src: firstVertex, dst: secondVertex, cost: path.cost };
+            });
+        });
+
+        this.shortestPathMatrix = shortestPathMatrix as IPathWithAssociatedEdgeMatrix;
     }
 
     public calculate(level = Infinity) {
-        return this.recursiveApproximate(this.root, this.terminals, this.terminals.length, level);
+        const { steinerTree } = this.findSteinerTree(this.root, this.terminals, this.terminals.length, level);
+
+        const restored = restoreOriginalPaths(steinerTree, this.shortestPathMatrix);
+        return new ShortestPaths(restored, this.root, this.terminals).calculate();
     }
 
-    private recursiveApproximate(
-        root: Vertex,
-        terminals: Vertex[],
-        terminalsCount: number,
-        level,
-        visited: Vertex[] = []
-    ) {
-        const { vertices } = this.graph;
+    private findSteinerTree(root: Vertex, terminals: Vertex[], terminalsCount: number, level, visited: Vertex[] = []) {
         const result = new Graph();
+        const resultTerminals: Vertex[] = [];
+        visited = [...visited, root];
 
         const reachable = this.countReachableTerminals(root, terminals);
 
         if (reachable < terminalsCount) {
-            return result;
+            return { steinerTree: result, cost: 0, coveredTerminals: resultTerminals };
         }
 
         while (terminalsCount > 0) {
+            let bestTree = new Graph();
             let bestDensity = Infinity;
-            let bestTree: Graph;
+            let bestCost = Infinity;
+            let bestTreeTerminals: Vertex[] = [];
 
-            vertices.forEach(vertex => {
-                if (vertex === root || visited.includes(vertex)) {
-                    return;
-                }
-
+            this.graph.vertices.forEach(vertex => {
                 const path = this.shortestPathMatrix[root][vertex];
 
-                if (path.cost === Infinity) {
+                if (visited.includes(vertex) || path.cost === Infinity) {
                     return;
                 }
 
                 for (let i = 1; i <= terminalsCount; i++) {
-                    const tree =
+                    let { steinerTree, cost, coveredTerminals } =
                         level > 1
-                            ? this.recursiveApproximate(vertex, terminals, i, level - 1, [...visited, root])
-                            : new Graph();
-                    tree.addEdges(path.edges);
+                            ? this.findSteinerTree(vertex, terminals, i, level - 1, [...visited, root])
+                            : { steinerTree: new Graph(), cost: 0, coveredTerminals: [] };
 
-                    const density = this.countDensity(tree, terminals);
+                    cost += path.cost;
+                    steinerTree.addEdge(path.edge);
+
+                    if (terminals.includes(vertex)) {
+                        coveredTerminals.push(vertex);
+                    }
+
+                    const density = cost / coveredTerminals.length;
 
                     if (bestDensity > density) {
-                        bestTree = tree;
+                        bestCost = cost;
+                        bestTree = steinerTree;
                         bestDensity = density;
+                        bestTreeTerminals = coveredTerminals;
                     }
                 }
             });
 
-            if (!bestTree) {
-                break;
-            }
-
             result.addEdges(bestTree.edges);
-            const oldTerminalsLength = terminals.length;
-            terminals = terminals.filter(terminal => !bestTree.vertices.has(terminal));
-            terminalsCount = terminalsCount - (oldTerminalsLength - terminals.length);
+            resultTerminals.push(...bestTreeTerminals);
+            terminals = terminals.filter(terminal => !bestTreeTerminals.includes(terminal));
+            terminalsCount = terminalsCount - bestTreeTerminals.length;
         }
 
-        return result;
+        return { steinerTree: result, cost: result.countCost(), coveredTerminals: resultTerminals };
     }
 
     private countReachableTerminals(root: Vertex, terminals: Vertex[]) {
@@ -100,18 +117,18 @@ export class Charikar {
         return counter;
     }
 
-    private countDensity(tree: Graph, terminals: Vertex[]) {
-        let terminalsCount = 0;
-        terminals.forEach(terminal => {
-            if (tree.vertices.has(terminal)) {
-                terminalsCount++;
-            }
-        });
-
-        if (terminalsCount === 0) {
-            return Infinity;
-        }
-
-        return tree.countCost() / terminalsCount;
-    }
+    // private countDensity(tree: Graph, terminals: Vertex[]) {
+    //     let terminalsCount = 0;
+    //     terminals.forEach(terminal => {
+    //         if (tree.vertices.has(terminal)) {
+    //             terminalsCount++;
+    //         }
+    //     });
+    //
+    //     if (terminalsCount === 0) {
+    //         return Infinity;
+    //     }
+    //
+    //     return tree.countCost() / terminalsCount;
+    // }
 }

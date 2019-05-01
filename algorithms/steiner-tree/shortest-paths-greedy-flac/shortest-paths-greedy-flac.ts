@@ -1,5 +1,8 @@
 import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
 import { GreedyFlac } from 'algorithms/steiner-tree/greedy-flac';
+import { ShortestPaths } from 'algorithms/steiner-tree/shortest-paths';
+
+import { buildShortestPathGraph, restoreOriginalPaths } from 'helpers/graph';
 
 import Graph from 'models/graph/graph';
 
@@ -7,11 +10,11 @@ import { Vertex } from 'types/vertex';
 import { IPathMatrix } from 'types/paths';
 
 export class ShortestPathsGreedyFlac {
-    private root: Vertex;
-    private terminals: Vertex[];
-    private graph: Graph;
+    private readonly root: Vertex;
+    private readonly terminals: Vertex[];
+    private readonly graph: Graph;
 
-    readonly shortestPathMatrix: IPathMatrix;
+    private readonly shortestPathMatrix: IPathMatrix;
 
     constructor(graph: Graph, root: Vertex, terminals: Vertex[]) {
         this.graph = graph;
@@ -22,40 +25,11 @@ export class ShortestPathsGreedyFlac {
     }
 
     public calculate() {
-        const shortestPathsGraph = this.buildShortestPathGraph();
+        const shortestPathsGraph = buildShortestPathGraph(this.graph, this.shortestPathMatrix);
 
         const steinerTree = new GreedyFlac(shortestPathsGraph, this.root, this.terminals).calculate();
 
-        return this.restoreOriginalPaths(steinerTree);
-    }
-
-    public buildShortestPathGraph() {
-        const shortestPathsGraph = new Graph();
-
-        this.graph.vertices.forEach(vertex1 => {
-            this.graph.vertices.forEach(vertex2 => {
-                const shortestPath = this.shortestPathMatrix[vertex1][vertex2];
-
-                if (shortestPath.cost < Infinity) {
-                    const edge = { src: vertex1, dst: vertex2, cost: shortestPath.cost };
-                    shortestPathsGraph.addEdge(edge);
-                }
-            });
-        });
-
-        return shortestPathsGraph;
-    }
-
-    public restoreOriginalPaths(graph: Graph) {
-        const graphWithOriginalPaths = new Graph();
-
-        graph.edges.forEach(edge => {
-            const { src, dst } = edge;
-            const originalPath = this.shortestPathMatrix[src][dst];
-
-            graphWithOriginalPaths.addEdges(originalPath.edges);
-        });
-
-        return graphWithOriginalPaths;
+        const restored = restoreOriginalPaths(steinerTree, this.shortestPathMatrix);
+        return new ShortestPaths(restored, this.root, this.terminals).calculate();
     }
 }

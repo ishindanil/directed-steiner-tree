@@ -6,6 +6,7 @@ export interface IEdge {
     src: Vertex;
     dst: Vertex;
     cost: number;
+    marked?: boolean;
 }
 
 export interface ISetOfEdgeMap {

@@ -14,7 +14,7 @@ export class Dynamic {
     readonly graph: Graph;
     readonly root: Vertex;
     readonly terminals: Vertex[];
-    readonly minimumPathMatrix: IPathMatrix;
+    readonly shortestPathMatrix: IPathMatrix;
     readonly terminalSubsets: Vertex[][];
 
     private readonly findSteinerTreeMemoized = moize(this.findSteinerTree.bind(this), {
@@ -31,7 +31,7 @@ export class Dynamic {
         this.graph = graph;
         this.root = root;
         this.terminals = terminals;
-        this.minimumPathMatrix = new FloydWarshall(graph).calculate();
+        this.shortestPathMatrix = new FloydWarshall(graph).calculate();
         this.terminalSubsets = getAllSubsets(terminals);
         this.terminalSubsets.shift(); // removing empty set
         this.terminalSubsets.sort((a, b) => (a.length > b.length ? 1 : -1));
@@ -56,7 +56,7 @@ export class Dynamic {
 
     private findSteinerTreeForSimpleSubset(subset: Vertex[], root: Vertex) {
         const [terminal] = subset;
-        const path = this.minimumPathMatrix[root][terminal];
+        const path = this.shortestPathMatrix[root][terminal];
 
         if (path.cost === Infinity) {
             return null;
@@ -69,7 +69,7 @@ export class Dynamic {
         const possibleTrees: Array<Graph | null> = [];
 
         for (const vertex of this.graph.vertices) {
-            const path = this.minimumPathMatrix[root][vertex];
+            const path = this.shortestPathMatrix[root][vertex];
 
             if (root === vertex) {
                 continue;
@@ -142,7 +142,7 @@ export class Dynamic {
     }
 
     private hasPath(root: Vertex, vertex: Vertex) {
-        const path = this.minimumPathMatrix[root][vertex];
+        const path = this.shortestPathMatrix[root][vertex];
 
         return path.cost !== Infinity;
     }

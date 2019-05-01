@@ -21,7 +21,14 @@ export class GreedyFlac {
         while (this.terminals.length > 0) {
             const tree = new Flac(this.graph, this.root, this.terminals).calculate();
 
-            steinerTree.addEdges(tree.edges);
+            tree.edges.forEach(edge => {
+                if (!edge.marked) {
+                    steinerTree.addEdge({ ...edge});
+                }
+
+                edge.cost = 0;
+                edge.marked = true;
+            });
 
             this.terminals = this.terminals.filter(terminal => !tree.vertices.has(terminal));
         }

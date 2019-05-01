@@ -3,7 +3,7 @@ import { boundMethod } from 'autobind-decorator';
 import { IEdge, ISetOfEdgeMap } from 'types/edges';
 import { Vertex } from 'types/vertex';
 
-class Graph {
+export class Graph {
     readonly edges = new Set<IEdge>();
     readonly vertices = new Set<Vertex>();
 

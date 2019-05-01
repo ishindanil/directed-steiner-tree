@@ -1,6 +1,5 @@
-import Graph from 'models/graph/graph';
-
 import { IEdge } from 'types/edges';
+import { Vertex } from 'types/vertex';
 
 export interface IPath {
     cost: number;
@@ -13,4 +12,25 @@ export interface IPathMap {
 
 export interface IPathMatrix {
     [vertex: string]: IPathMap;
+}
+
+export interface IPathListMap {
+    [vertex: string]: IPathWithDst[];
+}
+
+export interface IPathWithAssociatedEdge extends IPath {
+    edge: IEdge;
+}
+
+export interface IPathWithAssociatedEdgeMap {
+    [vertex: string]: IPathWithAssociatedEdge;
+}
+
+export interface IPathWithAssociatedEdgeMatrix {
+    [vertex: string]: IPathWithAssociatedEdgeMap;
+}
+
+export interface IPathWithDst {
+    path: IPath;
+    dst: Vertex;
 }
