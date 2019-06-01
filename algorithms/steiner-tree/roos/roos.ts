@@ -1,18 +1,17 @@
 import { ShortestPaths } from 'algorithms/steiner-tree/shortest-paths';
+import { Dijkstra, InverseDijkstra } from 'algorithms/shortest-paths/dijkstra';
 
 import Graph from 'models/graph/graph';
 
 import { Vertex } from 'types/vertex';
-import { IPath, IPathListMap, IPathMatrix } from 'types/paths';
-import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
+import { IPath, IPathListMap, IPathMap } from 'types/paths';
 
 export class Roos {
     private readonly graph: Graph;
     private readonly root: Vertex;
     private readonly terminals: Vertex[];
 
-    private readonly shortestPathMatrix: IPathMatrix;
-
+    private readonly shortestPathsFromRoot: IPathMap;
     private readonly sortedPathsToTerminals: IPathListMap = {};
 
     constructor(graph: Graph, root: Vertex, terminals: Vertex[]) {
@@ -20,7 +19,7 @@ export class Roos {
         this.root = root;
         this.terminals = terminals;
 
-        this.shortestPathMatrix = new FloydWarshall(graph).calculate();
+        this.shortestPathsFromRoot = new Dijkstra(this.graph, root).calculate();
 
         this.initSortedPathsToTerminals();
     }
@@ -28,12 +27,17 @@ export class Roos {
     private initSortedPathsToTerminals() {
         this.graph.vertices.forEach(vertex => {
             this.sortedPathsToTerminals[vertex] = [];
+        });
 
-            this.terminals.forEach(terminal => {
-                const path = this.shortestPathMatrix[vertex][terminal];
-                this.sortedPathsToTerminals[vertex].push({ path, dst: terminal });
+        this.terminals.forEach(terminal => {
+            const shortestPaths = new InverseDijkstra(this.graph, terminal).calculate();
+
+            this.graph.vertices.forEach(vertex => {
+                this.sortedPathsToTerminals[vertex].push({ path: shortestPaths[vertex], dst: terminal });
             });
+        });
 
+        this.graph.vertices.forEach(vertex => {
             this.sortedPathsToTerminals[vertex].sort((a, b) => (a.path.cost >= b.path.cost ? 1 : -1));
         });
     }
@@ -66,7 +70,7 @@ export class Roos {
         let bestTreeTerminals = [];
 
         this.graph.vertices.forEach(vertex => {
-            const firstPath = this.shortestPathMatrix[this.root][vertex];
+            const firstPath = this.shortestPathsFromRoot[vertex];
 
             if (firstPath.cost === Infinity) {
                 return;

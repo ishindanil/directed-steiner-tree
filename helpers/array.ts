@@ -1,5 +1,11 @@
+export function getSortedHash(array: any[]) {
+    const copy = array.slice();
+    copy.sort();
+
+    return getHash(copy);
+}
+
 export function getHash(array: any[]) {
-    array.sort();
     return array.join(',');
 }
 

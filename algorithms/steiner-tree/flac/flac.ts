@@ -23,7 +23,6 @@ export class Flac {
     private reachedVertices: ISetOfVerticesMap = {};
 
     private sortedInputEdges: ISortedListOfEdgeMap = {};
-    private saturatedInputEdges: IListOfEdgeMap = {};
     private saturatedOutputEdges: IListOfEdgeMap = {};
 
     private feedingTerminals: IBooleanMatrix = {};
@@ -43,7 +42,6 @@ export class Flac {
             this.reachedVertices[vertex].add(vertex);
 
             this.sortedInputEdges[vertex] = new SortedList<IEdge>(this.edgeCompare);
-            this.saturatedInputEdges[vertex] = [];
             this.saturatedOutputEdges[vertex] = [];
 
             this.feedingTerminals[vertex] = {};
@@ -185,7 +183,6 @@ export class Flac {
 
     private updatePathInfo(edge: IEdge) {
         this.reachedVertices[edge.dst].add(edge.src);
-        this.saturatedInputEdges[edge.dst].push(edge);
         this.saturatedOutputEdges[edge.src].push(edge);
     }
 

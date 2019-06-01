@@ -7,7 +7,6 @@ export function mergeGraphs(graphs: Graph[]) {
 
     graphs.forEach(graph => {
         mergedGraph.addEdges(graph.edges);
-        mergedGraph.addVertices(graph.vertices);
     });
 
     return mergedGraph;
@@ -39,6 +38,8 @@ export function restoreOriginalPaths(graph: Graph, shortestPathMatrix: IPathMatr
 
         graphWithOriginalPaths.addEdges(originalPath.edges);
     });
+
+    graphWithOriginalPaths.root = graph.root;
 
     return graphWithOriginalPaths;
 }

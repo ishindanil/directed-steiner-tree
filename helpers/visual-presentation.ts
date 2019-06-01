@@ -8,6 +8,10 @@ import Graph from 'models/graph/graph';
 import { graphVizPath } from 'env';
 
 export function writeVisualPresentation(name: string, graph: Graph, filepath: string) {
+    if (graph.edges.size > 400) {
+        return;
+    }
+
     createDirectory(path.dirname(filepath));
 
     const digraph = graphviz.digraph(name);

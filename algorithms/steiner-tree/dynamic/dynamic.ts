@@ -1,23 +1,24 @@
 const moize = require('moize').default;
 
-import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
+import { IFindSteinerTreeFunc } from 'algorithms/steiner-tree/dynamic/types';
 
-import { getAllSubsets, getHash } from 'helpers/array';
-import { mergeGraphs } from 'helpers/graph';
+import { getAllSubsets, getHash, getSortedHash } from 'helpers/array';
+import { mergeGraphs, restoreOriginalPaths } from 'helpers/graph';
+import { computeShortestPathMatrixWithAssociatedEdge } from 'helpers/shortest-paths';
 
 import Graph from 'models/graph/graph';
 
 import { Vertex } from 'types/vertex';
-import { IPathMatrix } from 'types/paths';
+import { IPathWithAssociatedEdgeMatrix } from 'types/paths';
 
 export class Dynamic {
-    readonly graph: Graph;
-    readonly root: Vertex;
-    readonly terminals: Vertex[];
-    readonly shortestPathMatrix: IPathMatrix;
-    readonly terminalSubsets: Vertex[][];
+    private readonly graph: Graph;
+    private readonly root: Vertex;
+    private readonly terminals: Vertex[];
+    private readonly terminalSubsets: Vertex[][];
+    private readonly shortestPathMatrix: IPathWithAssociatedEdgeMatrix;
 
-    private readonly findSteinerTreeMemoized = moize(this.findSteinerTree.bind(this), {
+    private readonly findSteinerTreeMemoized: IFindSteinerTreeFunc = moize(this.findSteinerTree.bind(this), {
         isSerialized: true,
         serializer: args => {
             const subsetHash = getHash(args[0]);
@@ -30,15 +31,21 @@ export class Dynamic {
     constructor(graph: Graph, root: Vertex, terminals: Vertex[]) {
         this.graph = graph;
         this.root = root;
-        this.terminals = terminals;
-        this.shortestPathMatrix = new FloydWarshall(graph).calculate();
+        this.terminals = terminals.slice();
+        this.terminals.sort();
         this.terminalSubsets = getAllSubsets(terminals);
         this.terminalSubsets.shift(); // removing empty set
         this.terminalSubsets.sort((a, b) => (a.length > b.length ? 1 : -1));
+        this.terminalSubsets.forEach(subset => {
+            subset.sort();
+        });
+        this.shortestPathMatrix = computeShortestPathMatrixWithAssociatedEdge(graph);
     }
 
     public calculate() {
-        return this.findSteinerTreeMemoized(this.terminals, this.root, []);
+        const tree = this.findSteinerTreeMemoized(this.terminals, this.root, []);
+
+        return restoreOriginalPaths(tree, this.shortestPathMatrix);
     }
 
     private findSteinerTree(subset: Vertex[], root: Vertex, visited: Vertex[]) {
@@ -46,12 +53,16 @@ export class Dynamic {
             return this.findSteinerTreeForSimpleSubset(subset, root);
         }
 
-        const trees = [
+        const [bestByTransition, bestBySplittingSubset] = [
             this.findSteinerTreeByTransition(subset, root, visited),
             this.findSteinerTreeBySplittingSubset(subset, root, visited)
         ];
 
-        return this.findMinimumTree(trees);
+        if (bestByTransition.cost < bestBySplittingSubset.cost) {
+            return bestByTransition.tree;
+        }
+
+        return bestBySplittingSubset.tree;
     }
 
     private findSteinerTreeForSimpleSubset(subset: Vertex[], root: Vertex) {
@@ -62,16 +73,15 @@ export class Dynamic {
             return null;
         }
 
-        return new Graph(path.edges, root);
+        return new Graph([path.edge], root);
     }
 
     private findSteinerTreeByTransition(subset: Vertex[], root: Vertex, visited: Vertex[]) {
         const possibleTrees: Array<Graph | null> = [];
+        visited = [...visited, root];
 
         for (const vertex of this.graph.vertices) {
-            const path = this.shortestPathMatrix[root][vertex];
-
-            if (root === vertex) {
+            if (visited.includes(vertex)) {
                 continue;
             }
 
@@ -79,11 +89,9 @@ export class Dynamic {
                 continue;
             }
 
-            if (visited.includes(vertex)) {
-                continue;
-            }
+            const path = this.shortestPathMatrix[root][vertex];
 
-            const steinerTree = this.findSteinerTreeMemoized(subset, vertex, [...visited, root]);
+            const steinerTree = this.findSteinerTreeMemoized(subset, vertex, visited);
 
             if (steinerTree === null) {
                 possibleTrees.push(null);
@@ -92,7 +100,7 @@ export class Dynamic {
             }
 
             const possibleTree = new Graph(steinerTree.edges, root);
-            possibleTree.addEdges(path.edges);
+            possibleTree.addEdge(path.edge);
 
             possibleTrees.push(possibleTree);
         }
@@ -102,7 +110,8 @@ export class Dynamic {
 
     private findSteinerTreeBySplittingSubset(subset: Vertex[], root: Vertex, visited: Vertex[]) {
         const hash = getHash(subset);
-        const possibleTrees = [];
+        const possibleTrees: Array<Graph | null> = [];
+        visited = [...visited, root];
 
         for (let i = 0; i < this.terminalSubsets.length; i++) {
             const firstSubset = this.terminalSubsets[i];
@@ -118,14 +127,18 @@ export class Dynamic {
                     break;
                 }
 
-                const unionHash = getHash([...firstSubset, ...secondSubset]);
+                if (firstSubset.length + secondSubset.length !== subset.length) {
+                    continue;
+                }
+
+                const unionHash = getSortedHash([...firstSubset, ...secondSubset]);
 
                 if (hash !== unionHash) {
                     continue;
                 }
 
-                const firstTree = this.findSteinerTreeMemoized(firstSubset, root, [...visited, root]);
-                const secondTree = this.findSteinerTreeMemoized(secondSubset, root, [...visited, root]);
+                const firstTree = this.findSteinerTreeMemoized(firstSubset, root, visited);
+                const secondTree = this.findSteinerTreeMemoized(secondSubset, root, visited);
 
                 if (firstTree === null || secondTree === null) {
                     possibleTrees.push(null);
@@ -149,7 +162,7 @@ export class Dynamic {
 
     private findMinimumTree(trees: Array<Graph | null>) {
         let minimumCost = Infinity;
-        let minimumTree: Graph = null;
+        let minimumTree: Graph | null = null;
 
         trees.forEach(tree => {
             if (tree === null) {
@@ -164,6 +177,6 @@ export class Dynamic {
             }
         });
 
-        return minimumTree;
+        return { tree: minimumTree, cost: minimumCost };
     }
 }

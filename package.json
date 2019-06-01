@@ -7,8 +7,8 @@
         "start": "NODE_PATH=. ts-node ./index.ts",
         "test": "NODE_PATH=. jest",
         "format": "prettier --write '**/*.{ts,js,json}'",
-        "build": "tsc && cp -rf steinlib/instances/B build/steinlib/instances/B",
-        "evaluate": "NODE_PATH=./build/ node ./build/index.js"
+        "build": "tsc && cp -rf steinlib/instances build/steinlib/instances",
+        "evaluate": "NODE_PATH=./build/ node --max_old_space_size=5000 ./build/index.js"
     },
     "author": "",
     "license": "ISC",

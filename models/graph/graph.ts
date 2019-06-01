@@ -56,6 +56,24 @@ export class Graph {
         return outputEdges;
     }
 
+    public getInputEdges() {
+        const inputEdges: ISetOfEdgeMap = {};
+
+        this.edges.forEach(edge => {
+            if (!inputEdges[edge.src]) {
+                inputEdges[edge.src] = new Set<IEdge>();
+            }
+
+            if (!inputEdges[edge.dst]) {
+                inputEdges[edge.dst] = new Set<IEdge>();
+            }
+
+            inputEdges[edge.dst].add(edge);
+        });
+
+        return inputEdges;
+    }
+
     public countCost() {
         let cost = 0;
         this.edges.forEach(edge => {

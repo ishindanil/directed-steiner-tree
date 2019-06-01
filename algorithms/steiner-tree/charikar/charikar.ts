@@ -1,38 +1,25 @@
-import { FloydWarshall } from 'algorithms/shortest-paths/floyd-warshall';
 import { ShortestPaths } from 'algorithms/steiner-tree/shortest-paths';
 
 import { restoreOriginalPaths } from 'helpers/graph';
+import { computeShortestPathMatrixWithAssociatedEdge } from 'helpers/shortest-paths';
 
 import Graph from 'models/graph/graph';
 
 import { Vertex } from 'types/vertex';
-import { IPathWithAssociatedEdgeMatrix, IPathWithAssociatedEdge } from 'types/paths';
+import { IPathWithAssociatedEdgeMatrix } from 'types/paths';
 
 export class Charikar {
     private readonly graph: Graph;
     private readonly root: Vertex;
     private readonly terminals: Vertex[];
-    private shortestPathMatrix: IPathWithAssociatedEdgeMatrix;
+    private readonly shortestPathMatrix: IPathWithAssociatedEdgeMatrix;
 
     constructor(graph: Graph, root: Vertex, terminals: Vertex[]) {
         this.graph = graph;
         this.root = root;
         this.terminals = terminals;
 
-        this.initShortestPathMatrix();
-    }
-
-    private initShortestPathMatrix() {
-        const shortestPathMatrix = new FloydWarshall(this.graph).calculate();
-
-        this.graph.vertices.forEach(firstVertex => {
-            this.graph.vertices.forEach(secondVertex => {
-                const path = shortestPathMatrix[firstVertex][secondVertex] as IPathWithAssociatedEdge;
-                path.edge = { src: firstVertex, dst: secondVertex, cost: path.cost };
-            });
-        });
-
-        this.shortestPathMatrix = shortestPathMatrix as IPathWithAssociatedEdgeMatrix;
+        this.shortestPathMatrix = computeShortestPathMatrixWithAssociatedEdge(this.graph);
     }
 
     public calculate(level = Infinity) {
