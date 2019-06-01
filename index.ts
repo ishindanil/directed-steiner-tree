@@ -1,8 +1,10 @@
-import { EvaluataionTests } from 'evaluation-tests';
+import { EvaluationTests } from 'evaluation-tests';
 
-import { instances } from 'steinlib';
+import { instanceMap } from 'steinlib';
 
-import { evaluationOutputPath } from 'env';
+import { evaluationOutputPath, evaluationTestSet } from 'env';
 
-const test = new EvaluataionTests(instances, evaluationOutputPath);
+const instances = instanceMap[evaluationTestSet];
+
+const test = new EvaluationTests(instances, evaluationOutputPath);
 test.run();

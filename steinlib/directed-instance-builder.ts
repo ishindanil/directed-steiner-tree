@@ -15,5 +15,9 @@ export function buildDirectedInstance(steinLibFile: string): IDirectedInstance {
 
     const root = terminals.shift();
 
+    if (!root) {
+        throw new Error('instance doesn\'t have terminals');
+    }
+
     return { graph, root, terminals };
 }

@@ -7,6 +7,9 @@ import { GreedyFlac } from 'algorithms/steiner-tree/greedy-flac';
 import { ShortestPathsGreedyFlac } from 'algorithms/steiner-tree/shortest-paths-greedy-flac';
 import { Roos } from 'algorithms/steiner-tree/roos';
 import { ShortestPaths } from 'algorithms/steiner-tree/shortest-paths';
+import { Dynamic } from 'algorithms/steiner-tree/dynamic';
+
+import { IInstanceEvaluationData } from 'evaluation-tests/types';
 
 import { writeVisualPresentation } from 'helpers/visual-presentation';
 import { createDirectory } from 'helpers/directory';
@@ -17,16 +20,16 @@ import { Graph } from 'models/graph/graph';
 import { buildDirectedInstance, IInstance } from 'steinlib';
 
 import { Vertex } from 'types/vertex';
-import { IInstanceEvaluationData } from 'evaluation-tests/types';
 
-export class EvaluataionTests {
-    private readonly algorithms = [
-        { run: this.runCharikar2, name: 'charikar-2' },
-        // { run: this.runCharikar3, name: 'Charikar 3' },
-        { run: this.runGreedyFlac, name: 'greedy-flac' },
-        { run: this.runShortestPathsGreedyFlac, name: 'shortest-path-greedy-flac' },
-        { run: this.runShortestPaths, name: 'shortest-paths' },
-        { run: this.runRoos, name: 'roos' }
+export class EvaluationTests {
+    private static readonly algorithms = [
+        // { run: EvaluationTests.runCharikar2, name: 'charikar-2' },
+        // { run: EvaluationTests.runCharikar3, name: 'Charikar 3' },
+        { run: EvaluationTests.runGreedyFlac, name: 'greedy-flac' },
+        { run: EvaluationTests.runShortestPathsGreedyFlac, name: 'shortest-path-greedy-flac' },
+        { run: EvaluationTests.runShortestPaths, name: 'shortest-paths' },
+        { run: EvaluationTests.runRoos, name: 'roos' }
+        // { run: EvaluationTests.runDynamic, name: 'dynamic' },
     ];
 
     private readonly instances: IInstance[];
@@ -45,6 +48,7 @@ export class EvaluataionTests {
         this.visualDir = path.join(outputDir, 'visuals');
 
         createDirectory(outputDir);
+        createDirectory(this.visualDir);
     }
 
     public run() {
@@ -66,7 +70,7 @@ export class EvaluataionTests {
         const costs: number[] = [];
         const ratios: number[] = [];
 
-        this.algorithms.forEach(algorithm => {
+        EvaluationTests.algorithms.forEach(algorithm => {
             console.log(`Running ${algorithm.name} algorithm for ${instance.name} instance`);
 
             const graphCopy = deepCopyGraph(graph);
@@ -99,7 +103,7 @@ export class EvaluataionTests {
     }
 
     private writeHeaders() {
-        const algorithmNames = this.algorithms.map(algorithm => algorithm.name);
+        const algorithmNames = EvaluationTests.algorithms.map(algorithm => algorithm.name);
         const headerItems = ['name', 'n', 'm', 'k', 'optimal', ...algorithmNames];
         const header = headerItems.join(',');
 
@@ -120,27 +124,31 @@ export class EvaluataionTests {
         fs.appendFileSync(this.rationFile, `${instanceInfo},${ratiosInfo}\n`);
     }
 
-    private runCharikar2(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runCharikar2(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new Charikar(graph, root, terminals).calculate(2);
     }
 
-    private runCharikar3(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runCharikar3(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new Charikar(graph, root, terminals).calculate(3);
     }
 
-    private runGreedyFlac(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runGreedyFlac(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new GreedyFlac(graph, root, terminals).calculate();
     }
 
-    private runShortestPathsGreedyFlac(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runShortestPathsGreedyFlac(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new ShortestPathsGreedyFlac(graph, root, terminals).calculate();
     }
 
-    private runShortestPaths(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runShortestPaths(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new ShortestPaths(graph, root, terminals).calculate();
     }
 
-    private runRoos(graph: Graph, root: Vertex, terminals: Vertex[]) {
+    private static runRoos(graph: Graph, root: Vertex, terminals: Vertex[]) {
         return new Roos(graph, root, terminals).calculate();
+    }
+
+    private static runDynamic(graph: Graph, root: Vertex, terminals: Vertex[]) {
+        return new Dynamic(graph, root, terminals).calculate();
     }
 }
